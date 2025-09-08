@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioSecure Shield - Prototype</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .hero-bg {
+            background-color: #f0f9ff;
+            background-image: radial-gradient(#dbeafe 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #2563eb, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .stat-card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            border: 1px solid #e5e7eb;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .action-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            font-weight: 600;
+            border: 1px solid #dbeafe;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        .action-btn:hover {
+            background-color: #dbeafe;
+            transform: scale(1.05);
+        }
+        .feature-card {
+             background-color: rgba(255, 255, 255, 0.8);
+             backdrop-filter: blur(10px);
+             border-radius: 0.75rem;
+             padding: 1.5rem;
+             border: 1px solid #e5e7eb;
+             transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        #toast {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #2d3748;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -2px rgb(0 0 0 / 0.2);
+            transition: bottom 0.5s ease-in-out;
+            z-index: 100;
+        }
+        .hidden-content {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Modal Container -->
+    <div id="modal-container" class="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center px-4">
+        <!-- Language Selection -->
+        <div id="language-modal" class="bg-white p-8 rounded-lg shadow-2xl text-center w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-2">Choose Your Language</h2>
+            <p class="text-gray-600 mb-6">अपनी भाषा चुनें / உங்கள் மொழியை தேர்ந்தெடுங்கள் / మీ భాషను ఎంచుకోండి</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button onclick="selectLanguage('en')" class="action-btn">English</button>
+                <button onclick="selectLanguage('hi')" class="action-btn">हिन्दी (Hindi)</button>
+                <button onclick="selectLanguage('ta')" class="action-btn">தமிழ் (Tamil)</button>
+                <button onclick="selectLanguage('te')" class="action-btn">తెలుగు (Telugu)</button>
+            </div>
+        </div>
+        <!-- Login Screen -->
+        <div id="login-modal" class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md hidden">
+            <h2 class="text-2xl font-bold mb-2 text-center" data-translate-key="loginTitle">Portal Login</h2>
+            <p class="text-gray-600 mb-6 text-center" data-translate-key="loginSubtitle">Access your secure dashboard.</p>
+            <form onsubmit="event.preventDefault(); proceedToSite();">
+                <div class="mb-4">
+                    <label for="farmerId" class="block text-sm font-medium text-gray-700" data-translate-key="loginIdLabel">Farmer ID / Vet ID</label>
+                    <input type="text" id="farmerId" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="e.g., FAR12345" required value="FAR12345">
+                </div>
+                 <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-gray-700" data-translate-key="loginPasswordLabel">Password</label>
+                    <input type="password" id="password" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="••••••••" required value="password123">
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:shadow-lg hover:from-blue-700 transition-all" data-translate-key="loginButton">Login</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="main-content" class="hidden-content">
+        <!-- Prototype Banner -->
+        <div id="prototype-banner" class="bg-yellow-100 border-b-2 border-yellow-200 text-yellow-800 text-center py-2 px-4 relative">
+            <p><strong data-translate-key="bannerStrong">Disclaimer:</strong> <span data-translate-key="bannerText">This is a conceptual prototype for demonstration. The final application will have a completely different and more robust UI/UX.</span></p>
+            <button onclick="dismissBanner()" class="absolute top-1/2 right-4 -translate-y-1/2 font-bold text-xl">&times;</button>
+        </div>
+
+        <!-- Header -->
+        <header class="bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-50">
+            <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <div class="text-2xl font-bold gradient-text" data-translate-key="appName">BioSecure Shield</div>
+                <div>
+                    <a href="#dashboards" class="text-gray-600 hover:text-blue-600 font-medium" data-translate-key="navLink">Dashboard Previews</a>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero-bg py-20 px-6">
+            <div class="container mx-auto text-center">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4" data-translate-key="heroTitle">AI-Powered Biosecurity for India's Livestock</h1>
+                <p class="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto" data-translate-key="heroSubtitle">A unified web platform connecting farmers, veterinarians, and authorities to predict, prevent, and manage livestock disease outbreaks in real-time.</p>
+            </div>
+        </section>
+
+        <!-- Main Content Area -->
+        <main class="container mx-auto px-6 py-12">
+
+            <!-- Features Section -->
+            <section id="features" class="mb-16">
+                <h2 class="text-3xl font-bold text-center text-gray-800 mb-10" data-translate-key="featuresTitle">Core Platform Features</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="feature-card">
+                        <div class="text-4xl mb-3">🧠</div>
+                        <h3 class="text-xl font-bold mb-2 text-blue-700" data-translate-key="feature1Title">AI Disease Prediction</h3>
+                        <p class="text-gray-600" data-translate-key="feature1Desc">Proactively identify high-risk zones 10-15 days in advance using machine learning.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="text-4xl mb-3">💻</div>
+                        <h3 class="text-xl font-bold mb-2 text-blue-700" data-translate-key="feature2Title">Responsive Web Portal (PWA)</h3>
+                        <p class="text-gray-600" data-translate-key="feature2Desc">Easy-to-use on any device. Icon-based interface with voice support for maximum adoption.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="text-4xl mb-3">🗺️</div>
+                        <h3 class="text-xl font-bold mb-2 text-blue-700" data-translate-key="feature3Title">GIS Risk Heatmaps</h3>
+                        <p class="text-gray-600" data-translate-key="feature3Desc">Visualize compliance data and outbreak alerts on interactive, real-time maps.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="text-4xl mb-3">📊</div>
+                        <h3 class="text-xl font-bold mb-2 text-blue-700" data-translate-key="feature4Title">Three-Tier Dashboards</h3>
+                        <p class="text-gray-600" data-translate-key="feature4Desc">Customized views for Farmers, Vets, and State/National authorities.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dashboard Previews Section -->
+            <section id="dashboards" class="mb-16">
+                <h2 class="text-3xl font-bold text-center text-gray-800 mb-10" data-translate-key="dashboardsTitle">Dashboard Previews (Proof of Concept)</h2>
+                
+                <div class="mb-12 bg-white p-6 md:p-8 rounded-xl shadow-lg border border-gray-200">
+                    <h3 class="text-2xl font-bold mb-1 text-green-700" data-translate-key="farmerDashboardTitle">Farmer Web Portal (PWA)</h3>
+                    <p class="text-gray-500 mb-6" data-translate-key="farmerDashboardDesc">A simple, actionable interface for daily farm management, accessible on any device.</p>
+                    <div class="bg-gray-100 p-4 rounded-lg flex flex-col md:flex-row gap-8 items-center justify-center">
+                        <div class="w-full md:w-1/3 text-center">
+                            <p class="font-semibold text-gray-700 mb-2" data-translate-key="farmerComplianceScore">Biosecurity Compliance Score</p>
+                            <div class="relative w-40 h-40 mx-auto">
+                                <svg class="w-full h-full" viewBox="0 0 36 36">
+                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e6e6e6" stroke-width="3"></path>
+                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#16a34a" stroke-width="3" stroke-dasharray="92, 100" stroke-linecap="round"></path>
+                                </svg>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <span class="text-3xl font-bold text-green-700">92%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-2/3">
+                            <p class="font-semibold text-gray-700 mb-2" data-translate-key="farmerTasksTitle">Today's Tasks</p>
+                            <ul class="space-y-3">
+                                <li class="bg-white p-3 rounded-md shadow-sm flex items-center"><input type="checkbox" checked class="h-5 w-5 text-green-600 rounded mr-3 accent-green-600" disabled><span data-translate-key="farmerTask1">Check Water Sanitization</span></li>
+                                <li class="bg-white p-3 rounded-md shadow-sm flex items-center"><input type="checkbox" checked class="h-5 w-5 text-green-600 rounded mr-3 accent-green-600" disabled><span data-translate-key="farmerTask2">Disinfect Farm Entrance (Upload Photo)</span></li>
+                                <li class="bg-white p-3 rounded-md shadow-sm flex items-center"><input type="checkbox" class="h-5 w-5 text-gray-400 rounded mr-3" disabled><span data-translate-key="farmerTask3">Record Feed Intake</span></li>
+                            </ul>
+                            <button class="w-full mt-4 bg-gradient-to-r from-red-600 to-red-500 text-white font-bold py-3 px-4 rounded-lg hover:shadow-lg hover:from-red-700 transition-all" data-translate-key="farmerReportButton">Report Symptom / Mortality</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-12 bg-white p-6 md:p-8 rounded-xl shadow-lg border border-gray-200">
+                    <h3 class="text-2xl font-bold mb-1 text-indigo-700" data-translate-key="vetDashboardTitle">Veterinarian Web Dashboard</h3>
+                    <p class="text-gray-500 mb-6" data-translate-key="vetDashboardDesc">Monitor regional farm compliance and respond to alerts.</p>
+                     <div class="bg-gray-100 p-4 rounded-lg grid grid-cols-1 md:grid-cols-2 gap-8">
+                         <div>
+                            <p class="font-semibold text-gray-700 mb-2" data-translate-key="vetComplianceOverview">Farm Compliance Overview</p>
+                             <div class="space-y-2">
+                                 <div class="bg-white p-3 rounded-md shadow-sm">
+                                    <div class="flex justify-between items-center"><span data-translate-key="vetFarm1">Farm ID: P001</span> <span class="font-bold text-green-600">92%</span></div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5 mt-1"><div class="bg-green-600 h-2.5 rounded-full" style="width: 92%"></div></div>
+                                </div>
+                                <div class="bg-white p-3 rounded-md shadow-sm">
+                                    <div class="flex justify-between items-center"><span data-translate-key="vetFarm2">Farm ID: P002</span> <span class="font-bold text-yellow-500">75%</span></div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5 mt-1"><div class="bg-yellow-500 h-2.5 rounded-full" style="width: 75%"></div></div>
+                                </div>
+                                <div class="bg-white p-3 rounded-md shadow-sm">
+                                    <div class="flex justify-between items-center"><span data-translate-key="vetFarm3">Farm ID: P003</span> <span class="font-bold text-red-600">40%</span></div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5 mt-1"><div class="bg-red-600 h-2.5 rounded-full" style="width: 40%"></div></div>
+                                </div>
+                             </div>
+                         </div>
+                         <div>
+                            <p class="font-semibold text-gray-700 mb-2" data-translate-key="vetPendingActions">Pending Actions</p>
+                             <ul class="space-y-2">
+                                <li class="bg-white p-3 rounded-md shadow-sm" data-translate-key="vetAction1">Verify Photo: Farm P002 - Disinfection</li>
+                                <li class="bg-red-100 text-red-800 p-3 rounded-md shadow-sm font-bold" data-translate-key="vetAction2">Alert: High Mortality Reported at Farm P007</li>
+                             </ul>
+                         </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg border border-gray-200">
+                    <h3 class="text-2xl font-bold mb-1 text-sky-800" data-translate-key="adminDashboardTitle">State/National Administrator Dashboard</h3>
+                    <p class="text-gray-500 mb-6" data-translate-key="adminDashboardDesc">High-level analytics and predictive insights for strategic planning.</p>
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                            <div class="stat-card !bg-sky-50 !border-l-4 !border-sky-500">
+                                <h4 class="text-lg font-semibold text-sky-800" data-translate-key="adminStat1Title">State-wide Compliance</h4>
+                                <p class="text-3xl font-bold text-sky-600">81%</p>
+                            </div>
+                            <div class="stat-card !bg-red-50 !border-l-4 !border-red-500">
+                                <h4 class="text-lg font-semibold text-red-800" data-translate-key="adminStat2Title">Active Alerts</h4>
+                                <p class="text-3xl font-bold text-red-600">14</p>
+                            </div>
+                            <div class="stat-card !bg-yellow-50 !border-l-4 !border-yellow-500">
+                                <h4 class="text-lg font-semibold text-yellow-800" data-translate-key="adminStat3Title">Predicted High-Risk Zones</h4>
+                                <p class="text-3xl font-bold text-yellow-600">3</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div>
+                                 <p class="font-semibold text-gray-700 mb-2 text-center" data-translate-key="adminMapTitle">AI-Generated Risk Heatmap (Prototype)</p>
+                                 <div class="bg-white p-2 rounded-md shadow-sm aspect-video flex items-center justify-center">
+                                     <img src="https://placehold.co/600x400/e2e8f0/475569?text=GIS+Heatmap+View" alt="GIS Heatmap placeholder" class="rounded-md max-w-full h-auto">
+                                 </div>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-700 mb-2 text-center" data-translate-key="adminChartTitle">Compliance Trend (Last 6 Months)</p>
+                                 <div class="bg-white p-2 rounded-md shadow-sm aspect-video">
+                                     <canvas id="complianceTrendChart"></canvas>
+                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Upcoming Features Section -->
+            <section id="upcoming-features">
+                <h2 class="text-3xl font-bold text-center text-gray-800 mb-10" data-translate-key="upcomingTitle">Upcoming Features</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                        <h3 class="text-xl font-bold mb-2 text-gray-700" data-translate-key="upcoming1Title">Supply Chain Integration</h3>
+                        <p class="text-gray-500 mb-4" data-translate-key="upcoming1Desc">Track livestock movement from farm to market to enhance traceability.</p>
+                        <button onclick="showToast()" class="bg-gray-200 text-gray-500 font-bold py-2 px-4 rounded-lg cursor-not-allowed" data-translate-key="comingSoon">Coming Soon</button>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                        <h3 class="text-xl font-bold mb-2 text-gray-700" data-translate-key="upcoming2Title">Automated Vet Consultation</h3>
+                        <p class="text-gray-500 mb-4" data-translate-key="upcoming2Desc">Connect with veterinarians via video call directly through the portal.</p>
+                        <button onclick="showToast()" class="bg-gray-200 text-gray-500 font-bold py-2 px-4 rounded-lg cursor-not-allowed" data-translate-key="comingSoon">Coming Soon</button>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                        <h3 class="text-xl font-bold mb-2 text-gray-700" data-translate-key="upcoming3Title">Insurance & Compensation</h3>
+                        <p class="text-gray-500 mb-4" data-translate-key="upcoming3Desc">Digitize and streamline insurance claims and government compensation processes.</p>
+                        <button onclick="showToast()" class="bg-gray-200 text-gray-500 font-bold py-2 px-4 rounded-lg cursor-not-allowed" data-translate-key="comingSoon">Coming Soon</button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+        
+        <!-- Toast Notification -->
+        <div id="toast"><span data-translate-key="toastText">This feature will be added in the final product!</span></div>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white mt-16">
+            <div class="container mx-auto px-6 py-8 text-center">
+                <p class="text-xl font-bold" data-translate-key="appName">BioSecure Shield</p>
+                <p class="text-gray-400" data-translate-key="footerText">A Project by Team Tech Sentinels for Smart India Hackathon 2025.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const translations = {
+            en: {
+                appName: "BioSecure Shield",
+                navLink: "Dashboard Previews",
+                heroTitle: "AI-Powered Biosecurity for India's Livestock",
+                heroSubtitle: "A unified web platform connecting farmers, veterinarians, and authorities to predict, prevent, and manage livestock disease outbreaks in real-time.",
+                featuresTitle: "Core Platform Features",
+                feature1Title: "AI Disease Prediction",
+                feature1Desc: "Proactively identify high-risk zones 10-15 days in advance using machine learning.",
+                feature2Title: "Responsive Web Portal (PWA)",
+                feature2Desc: "Easy-to-use on any device. Icon-based interface with voice support for maximum adoption.",
+                feature3Title: "GIS Risk Heatmaps",
+                feature3Desc: "Visualize compliance data and outbreak alerts on interactive, real-time maps.",
+                feature4Title: "Three-Tier Dashboards",
+                feature4Desc: "Customized views for Farmers, Vets, and State/National authorities.",
+                dashboardsTitle: "Dashboard Previews (Proof of Concept)",
+                farmerDashboardTitle: "Farmer Web Portal (PWA)",
+                farmerDashboardDesc: "A simple, actionable interface for daily farm management, accessible on any device.",
+                farmerComplianceScore: "Biosecurity Compliance Score",
+                farmerTasksTitle: "Today's Tasks",
+                farmerTask1: "Check Water Sanitization",
+                farmerTask2: "Disinfect Farm Entrance (Upload Photo)",
+                farmerTask3: "Record Feed Intake",
+                farmerReportButton: "Report Symptom / Mortality",
+                vetDashboardTitle: "Veterinarian Web Dashboard",
+                vetDashboardDesc: "Monitor regional farm compliance and respond to alerts.",
+                vetComplianceOverview: "Farm Compliance Overview",
+                vetFarm1: "Farm ID: P001",
+                vetFarm2: "Farm ID: P002",
+                vetFarm3: "Farm ID: P003",
+                vetPendingActions: "Pending Actions",
+                vetAction1: "Verify Photo: Farm P002 - Disinfection",
+                vetAction2: "Alert: High Mortality Reported at Farm P007",
+                adminDashboardTitle: "State/National Administrator Dashboard",
+                adminDashboardDesc: "High-level analytics and predictive insights for strategic planning.",
+                adminStat1Title: "State-wide Compliance",
+                adminStat2Title: "Active Alerts",
+                adminStat3Title: "Predicted High-Risk Zones",
+                adminMapTitle: "AI-Generated Risk Heatmap (Prototype)",
+                adminChartTitle: "Compliance Trend (Last 6 Months)",
+                footerText: "A Project by Team Tech Sentinels for Smart India Hackathon 2025.",
+                bannerStrong: "Disclaimer:",
+                bannerText: "This is a conceptual prototype for demonstration. The final application will have a completely different and more robust UI/UX.",
+                upcomingTitle: "Upcoming Features",
+                upcoming1Title: "Supply Chain Integration",
+                upcoming1Desc: "Track livestock movement from farm to market to enhance traceability.",
+                upcoming2Title: "Automated Vet Consultation",
+                upcoming2Desc: "Connect with veterinarians via video call directly through the portal.",
+                upcoming3Title: "Insurance & Compensation",
+                upcoming3Desc: "Digitize and streamline insurance claims and government compensation processes.",
+                comingSoon: "Coming Soon",
+                toastText: "This feature will be added in the final product!",
+                loginTitle: "Portal Login",
+                loginSubtitle: "Access your secure dashboard.",
+                loginIdLabel: "Farmer ID / Vet ID",
+                loginPasswordLabel: "Password",
+                loginButton: "Login",
+            },
+            hi: {
+                appName: "बायोसिक्योर शील्ड",
+                navLink: "डैशबोर्ड पूर्वावलोकन",
+                heroTitle: "भारत के पशुधन के लिए एआई-संचालित जैव सुरक्षा",
+                heroSubtitle: "किसानों, पशु चिकित्सकों और अधिकारियों को वास्तविक समय में पशु रोग के प्रकोप की भविष्यवाणी करने, रोकने और प्रबंधित करने के लिए जोड़ने वाला एक एकीकृत वेब प्लेटफ़ॉर्म।",
+                featuresTitle: "मुख्य प्लेटफ़ॉर्म सुविधाएँ",
+                feature1Title: "एआई रोग भविष्यवाणी",
+                feature1Desc: "मशीन लर्निंग का उपयोग करके 10-15 दिन पहले उच्च जोखिम वाले क्षेत्रों की सक्रिय रूप से पहचान करें।",
+                feature2Title: "उत्तरदायी वेब पोर्टल (PWA)",
+                feature2Desc: "किसी भी डिवाइस पर उपयोग में आसान। अधिकतम अपनाने के लिए आवाज समर्थन के साथ आइकन-आधारित इंटरफ़ेस।",
+                feature3Title: "जीआईएस जोखिम हीटमैप्स",
+                feature3Desc: "इंटरैक्टिव, रीयल-टाइम मानचित्रों पर अनुपालन डेटा और प्रकोप अलर्ट की कल्पना करें।",
+                feature4Title: "तीन-स्तरीय डैशबोर्ड",
+                feature4Desc: "किसानों, पशु चिकित्सकों और राज्य/राष्ट्रीय प्राधिकरणों के लिए अनुकूलित विचार।",
+                dashboardsTitle: "डैशबोर्ड पूर्वावलोकन (अवधारणा का प्रमाण)",
+                farmerDashboardTitle: "किसान वेब पोर्टल (PWA)",
+                farmerDashboardDesc: "दैनिक कृषि प्रबंधन के लिए एक सरल, कार्रवाई योग्य इंटरफ़ेस, जो किसी भी उपकरण पर उपलब्ध है।",
+                farmerComplianceScore: "जैव सुरक्षा अनुपालन स्कोर",
+                farmerTasksTitle: "आज के कार्य",
+                farmerTask1: "पानी की स्वच्छता की जाँच करें",
+                farmerTask2: "फार्म प्रवेश को कीटाणुरहित करें (फोटो अपलोड करें)",
+                farmerTask3: "फ़ीड सेवन रिकॉर्ड करें",
+                farmerReportButton: "लक्षण / मृत्यु दर की रिपोर्ट करें",
+                vetDashboardTitle: "पशु चिकित्सक वेब डैशबोर्ड",
+                vetDashboardDesc: "क्षेत्रीय कृषि अनुपालन की निगरानी करें और अलर्ट का जवाब दें।",
+                vetComplianceOverview: "फार्म अनुपालन अवलोकन",
+                vetFarm1: "फार्म आईडी: P001",
+                vetFarm2: "फार्म आईडी: P002",
+                vetFarm3: "फार्म आईडी: P003",
+                vetPendingActions: "लंबित कार्रवाइयां",
+                vetAction1: "फोटो सत्यापित करें: फार्म P002 - कीटाणुशोधन",
+                vetAction2: "चेतावनी: फार्म P007 पर उच्च मृत्यु दर की सूचना",
+                adminDashboardTitle: "राज्य/राष्ट्रीय प्रशासक डैशबोर्ड",
+                adminDashboardDesc: "रणनीतिक योजना के लिए उच्च-स्तरीय विश्लेषण और भविष्य कहनेवाला अंतर्दृष्टि।",
+                adminStat1Title: "राज्यव्यापी अनुपालन",
+                adminStat2Title: "सक्रिय अलर्ट",
+                adminStat3Title: "अनुमानित उच्च जोखिम वाले क्षेत्र",
+                adminMapTitle: "एआई-जनित जोखिम हीटमैप (प्रोटोटाइप)",
+                adminChartTitle: "अनुपालन प्रवृत्ति (पिछले 6 महीने)",
+                footerText: "स्मार्ट इंडिया हैकथॉन 2025 के लिए टीम टेक सेंटिनल्स द्वारा एक परियोजना।",
+                bannerStrong: "अस्वीकरण:",
+                bannerText: "यह प्रदर्शन के लिए एक वैचारिक प्रोटोटाइप है। अंतिम एप्लिकेशन में पूरी तरह से अलग और अधिक मजबूत यूआई/यूएक्स होगा।",
+                upcomingTitle: "आगामी विशेषताएं",
+                upcoming1Title: "आपूर्ति श्रृंखला एकीकरण",
+                upcoming1Desc: "पता लगाने की क्षमता बढ़ाने के लिए खेत से बाजार तक पशुओं की आवाजाही को ट्रैक करें।",
+                upcoming2Title: "स्वचालित पशु चिकित्सक परामर्श",
+                upcoming2Desc: "पोर्टल के माध्यम से सीधे वीडियो कॉल के माध्यम से पशु चिकित्सकों से जुड़ें।",
+                upcoming3Title: "बीमा और मुआवजा",
+                upcoming3Desc: "बीमा दावों और सरकारी मुआवजा प्रक्रियाओं को डिजिटाइज़ और सुव्यवस्थित करें।",
+                comingSoon: "जल्द आ रहा है",
+                toastText: "यह सुविधा अंतिम उत्पाद में जोड़ी जाएगी!",
+                loginTitle: "पोर्टल लॉगिन",
+                loginSubtitle: "अपने सुरक्षित डैशबोर्ड तक पहुँचें।",
+                loginIdLabel: "किसान आईडी / पशु चिकित्सक आईडी",
+                loginPasswordLabel: "पासवर्ड",
+                loginButton: "लॉग इन करें",
+            },
+            ta: {
+                appName: "பயோசெக்யூர் ஷீல்டு",
+                navLink: "டாஷ்போர்டு மாதிரிக்காட்சிகள்",
+                heroTitle: "இந்தியாவின் கால்நடைகளுக்கான AI-இயங்கும் உயிரியல் பாதுகாப்பு",
+                heroSubtitle: "விவசாயிகள், கால்நடை மருத்துவர்கள் மற்றும் அதிகாரிகளை நிகழ்நேரத்தில் கால்நடை நோய் வெடிப்புகளைக் கணிக்க, தடுக்க மற்றும் நிர்வகிக்க ஒரு ஒருங்கிணைந்த வலைத் தளம்.",
+                featuresTitle: "முக்கிய மேடை அம்சங்கள்",
+                feature1Title: "AI நோய் முன்கணிப்பு",
+                feature1Desc: "இயந்திர கற்றலைப் பயன்படுத்தி 10-15 நாட்களுக்கு முன்னதாக அதிக ஆபத்துள்ள மண்டலங்களை முன்கூட்டியே அடையாளம் காணவும்.",
+                feature2Title: "பதிலளிக்கக்கூடிய வலை போர்டல் (PWA)",
+                feature2Desc: "எந்த சாதனத்திலும் பயன்படுத்த எளிதானது. அதிகபட்ச தத்தெடுப்புக்கு குரல் ஆதரவுடன் ஐகான் அடிப்படையிலான இடைமுகம்.",
+                feature3Title: "ஜிஐஎஸ் இடர் வெப்ப வரைபடங்கள்",
+                feature3Desc: "ஊடாடும், நிகழ்நேர வரைபடங்களில் இணக்கத் தரவு மற்றும் நோய் வெடிப்பு எச்சரிக்கைகளைக் காட்சிப்படுத்தவும்.",
+                feature4Title: "மூன்று அடுக்கு டாஷ்போர்டுகள்",
+                feature4Desc: "விவசாயிகள், கால்நடை மருத்துவர்கள் மற்றும் மாநில/தேசிய அதிகாரிகளுக்கான தனிப்பயனாக்கப்பட்ட காட்சிகள்.",
+                dashboardsTitle: "டாஷ்போர்டு மாதிரிக்காட்சிகள் (கருத்தின் சான்று)",
+                farmerDashboardTitle: "விவசாயி வலை போர்டல் (PWA)",
+                farmerDashboardDesc: "தினசரி பண்ணை நிர்வாகத்திற்கான ஒரு எளிய, செயல்படக்கூடிய இடைமுகம், எந்த சாதனத்திலும் அணுகலாம்.",
+                farmerComplianceScore: "உயிரியல் பாதுகாப்பு இணக்க மதிப்பெண்",
+                farmerTasksTitle: "இன்றைய பணிகள்",
+                farmerTask1: "நீர் சுத்திகரிப்பைச் சரிபார்க்கவும்",
+                farmerTask2: "பண்ணை நுழைவாயிலைக் கிருமி நீக்கம் செய்யவும் (புகைப்படத்தைப் பதிவேற்றவும்)",
+                farmerTask3: "தீவன உட்கொள்ளலைப் பதிவு செய்யவும்",
+                farmerReportButton: "அறிகுறி / இறப்பைப் புகாரளிக்கவும்",
+                vetDashboardTitle: "கால்நடை மருத்துவர் வலை டாஷ்போர்டு",
+                vetDashboardDesc: "பிராந்திய பண்ணை இணக்கத்தைக் கண்காணித்து எச்சரிக்கைகளுக்கு பதிலளிக்கவும்.",
+                vetComplianceOverview: "பண்ணை இணக்க கண்ணோட்டம்",
+                vetFarm1: "பண்ணை ஐடி: P001",
+                vetFarm2: "பண்ணை ஐடி: P002",
+                vetFarm3: "பண்ணை ஐடி: P003",
+                vetPendingActions: "நிலுவையில் உள்ள செயல்கள்",
+                vetAction1: "புகைப்படத்தைச் சரிபார்க்கவும்: பண்ணை P002 - கிருமி நீக்கம்",
+                vetAction2: "எச்சரிக்கை: பண்ணை P007 இல் அதிக இறப்பு பதிவாகியுள்ளது",
+                adminDashboardTitle: "மாநில/தேசிய நிர்வாகி டாஷ்போர்டு",
+                adminDashboardDesc: "மூலோபாய திட்டமிடலுக்கான உயர்நிலை பகுப்பாய்வு மற்றும் முன்கணிப்பு நுண்ணறிவு.",
+                adminStat1Title: "மாநிலம் தழுவிய இணக்கம்",
+                adminStat2Title: "செயலில் உள்ள எச்சரிக்கைகள்",
+                adminStat3Title: "கணிக்கப்பட்ட அதிக ஆபத்துள்ள மண்டலங்கள்",
+                adminMapTitle: "AI-உருவாக்கிய இடர் வெப்ப வரைபடம் (முன்மாதிரி)",
+                adminChartTitle: "இணக்கப் போக்கு (கடைசி 6 மாதங்கள்)",
+                footerText: "ஸ்மார்ட் இந்தியா ஹேக்கத்தான் 2025 க்கான டீம் டெக் சென்டினல்ஸின் ஒரு திட்டம்.",
+                bannerStrong: "பொறுப்புத் துறப்பு:",
+                bannerText: "இது விளக்கத்திற்கான ஒரு கருத்தியல் முன்மாதிரி. இறுதிப் பயன்பாடு முற்றிலும் மாறுபட்ட மற்றும் வலுவான UI/UX ஐக் கொண்டிருக்கும்.",
+                upcomingTitle: "வரவிருக்கும் அம்சங்கள்",
+                upcoming1Title: "விநியோகச் சங்கிலி ஒருங்கிணைப்பு",
+                upcoming1Desc: "கண்டறியும் தன்மையை மேம்படுத்த பண்ணையிலிருந்து சந்தைக்கு கால்நடை இயக்கத்தைக் கண்காணிக்கவும்.",
+                upcoming2Title: "தானியங்கு கால்நடை ஆலோசனை",
+                upcoming2Desc: "போர்டல் வழியாக நேரடியாக வீடியோ அழைப்பு வழியாக கால்நடை மருத்துவர்களுடன் இணையுங்கள்.",
+                upcoming3Title: "காப்பீடு மற்றும் இழப்பீடு",
+                upcoming3Desc: "காப்பீட்டுக் கோரிக்கைகள் மற்றும் அரசாங்க இழப்பீட்டு செயல்முறைகளை டிஜிட்டல் மயமாக்கி நெறிப்படுத்துங்கள்.",
+                comingSoon: "விரைவில் வருகிறது",
+                toastText: "இந்த அம்சம் இறுதி தயாரிப்பில் சேர்க்கப்படும்!",
+                loginTitle: "போர்டல் உள்நுழைவு",
+                loginSubtitle: "உங்கள் பாதுகாப்பான டாஷ்போர்டை அணுகவும்.",
+                loginIdLabel: "விவசாயி ஐடி / கால்நடை ஐடி",
+                loginPasswordLabel: "கடவுச்சொல்",
+                loginButton: "உள்நுழையவும்",
+            },
+            te: {
+                appName: "బయోసెక్యూర్ షీల్డ్",
+                navLink: "డాష్‌బోర్డ్ ప్రివ్యూలు",
+                heroTitle: "భారతదేశ పశువుల కోసం AI-ఆధారిత బయోసెక్యూరిటీ",
+                heroSubtitle: "రైతులు, పశువైద్యులు మరియు అధికారులను నిజ సమయంలో పశువుల వ్యాధి వ్యాప్తిని అంచనా వేయడానికి, నిరోధించడానికి మరియు నిర్వహించడానికి కనెక్ట్ చేసే ఏకీకృత వెబ్ ప్లాట్‌ఫారమ్.",
+                featuresTitle: "కోర్ ప్లాట్‌ఫారమ్ ఫీచర్లు",
+                feature1Title: "AI వ్యాధి అంచనా",
+                feature1Desc: "మెషిన్ లెర్నింగ్‌ను ఉపయోగించి 10-15 రోజుల ముందుగానే అధిక-ప్రమాద మండలాలను ముందుగానే గుర్తించండి.",
+                feature2Title: "రెస్పాన్సివ్ వెబ్ పోర్టల్ (PWA)",
+                feature2Desc: "ఏ పరికరంలోనైనా ఉపయోగించడం సులభం. గరిష్ట స్వీకరణ కోసం వాయిస్ మద్దతుతో ఐకాన్-ఆధారిత ఇంటర్‌ఫేస్.",
+                feature3Title: "GIS రిస్క్ హీట్‌మ్యాప్‌లు",
+                feature3Desc: "ఇంటరాక్టివ్, నిజ-సమయ మ్యాప్‌లలో సమ్మతి డేటా మరియు వ్యాప్తి హెచ్చరికలను విజువలైజ్ చేయండి.",
+                feature4Title: "మూడు-స్థాయి డాష్‌బోర్డ్‌లు",
+                feature4Desc: "రైతులు, పశువైద్యులు మరియు రాష్ట్ర/జాతీయ అధికారుల కోసం అనుకూలీకరించిన వీక్షణలు.",
+                dashboardsTitle: "డాష్‌బోర్డ్ ప్రివ్యూలు (భావన యొక్క రుజువు)",
+                farmerDashboardTitle: "రైతు వెబ్ పోర్టల్ (PWA)",
+                farmerDashboardDesc: "రోజువారీ వ్యవసాయ నిర్వహణ కోసం ఒక సాధారణ, చర్య తీసుకోదగిన ఇంటర్‌ఫేస్, ఏ పరికరంలోనైనా అందుబాటులో ఉంటుంది.",
+                farmerComplianceScore: "బయోసెక్యూరిటీ కంప్లయన్స్ స్కోర్",
+                farmerTasksTitle: "నేటి పనులు",
+                farmerTask1: "నీటి పారిశుధ్యాన్ని తనిఖీ చేయండి",
+                farmerTask2: "వ్యవసాయ ప్రవేశాన్ని క్రిమిసంహారక చేయండి (ఫోటోను అప్‌లోడ్ చేయండి)",
+                farmerTask3: "ఫీడ్ తీసుకోవడం రికార్డ్ చేయండి",
+                farmerReportButton: "లక్షణం / మరణాల నివేదిక",
+                vetDashboardTitle: "పశువైద్య వెబ్ డాష్‌బోర్డ్",
+                vetDashboardDesc: "ప్రాంతీయ వ్యవసాయ సమ్మతిని పర్యవేక్షించండి మరియు హెచ్చరికలకు ప్రతిస్పందించండి.",
+                vetComplianceOverview: "వ్యవసాయ సమ్మతి అవలోకనం",
+                vetFarm1: "ఫార్మ్ ID: P001",
+                vetFarm2: "ఫార్మ్ ID: P002",
+                vetFarm3: "ఫార్మ్ ID: P003",
+                vetPendingActions: "పెండింగ్ చర్యలు",
+                vetAction1: "ఫోటోను ధృవీకరించండి: ఫార్మ్ P002 - క్రిమిసంహారక",
+                vetAction2: "హెచ్చరిక: ఫార్మ్ P007 వద్ద అధిక మరణాలు నివేదించబడ్డాయి",
+                adminDashboardTitle: "రాష్ట్ర/జాతీయ నిర్వాహక డాష్‌బోర్డ్",
+                adminDashboardDesc: "వ్యూహాత్మక ప్రణాళిక కోసం ఉన్నత-స్థాయి విశ్లేషణలు మరియు అంచనా అంతర్దృష్టులు.",
+                adminStat1Title: "రాష్ట్రవ్యాప్త సమ్మతి",
+                adminStat2Title: "యాక్టివ్ హెచ్చరికలు",
+                adminStat3Title: "అంచనా వేసిన అధిక-ప్రమాద మండలాలు",
+                adminMapTitle: "AI-ఉత్పత్తి చేయబడిన రిస్క్ హీట్‌మ్యాప్ (ప్రోటోటైప్)",
+                adminChartTitle: "సమ్మతి ట్రెండ్ (గత 6 నెలలు)",
+                footerText: "స్మార్ట్ ఇండియా హ్యాకథాన్ 2025 కోసం టీమ్ టెక్ సెంటినెల్స్ ద్వారా ఒక ప్రాజెక్ట్.",
+                bannerStrong: "నిరాకరణ:",
+                bannerText: "ఇది ప్రదర్శన కోసం ఒక సంభావిత నమూనా. తుది అప్లికేషన్ పూర్తిగా భిన్నమైన మరియు మరింత బలమైన UI/UXని కలిగి ఉంటుంది.",
+                upcomingTitle: "రాబోయే ఫీచర్లు",
+                upcoming1Title: "సరఫరా గొలుసు ఇంటిగ్రేషన్",
+                upcoming1Desc: "ట్రేస్‌బిలిటీని మెరుగుపరచడానికి వ్యవసాయ క్షేత్రం నుండి మార్కెట్‌కు పశువుల కదలికను ట్రాక్ చేయండి.",
+                upcoming2Title: "ఆటోమేటెడ్ వెట్ కన్సల్టేషన్",
+                upcoming2Desc: "పోర్టల్ ద్వారా నేరుగా వీడియో కాల్ ద్వారా పశువైద్యులతో కనెక్ట్ అవ్వండి.",
+                upcoming3Title: "భీమా & పరిహారం",
+                upcoming3Desc: "భీమా క్లెయిమ్‌లు మరియు ప్రభుత్వ పరిహార ప్రక్రియలను డిజిటలైజ్ చేయండి మరియు క్రమబద్ధీకరించండి.",
+                comingSoon: "త్వరలో వస్తుంది",
+                toastText: "ఈ ఫీచర్ తుది ఉత్పత్తిలో జోడించబడుతుంది!",
+                loginTitle: "పోర్టల్ లాగిన్",
+                loginSubtitle: "మీ సురక్షిత డాష్‌బోర్డ్‌ను యాక్సెస్ చేయండి.",
+                loginIdLabel: "రైతు ID / వెట్ ID",
+                loginPasswordLabel: "పాస్‌వర్డ్",
+                loginButton: "లాగిన్",
+            }
+        };
+
+        let currentLang = 'en'; 
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.querySelectorAll('[data-translate-key]').forEach(element => {
+                const key = element.getAttribute('data-translate-key');
+                if (translations[lang] && translations[lang][key]) {
+                    element.innerText = translations[lang][key];
+                }
+            });
+        }
+
+        function selectLanguage(lang) {
+            setLanguage(lang);
+            document.getElementById('language-modal').classList.add('hidden');
+            document.getElementById('login-modal').classList.remove('hidden');
+        }
+        
+        function proceedToSite() {
+            document.getElementById('modal-container').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            
+            // Initialize chart after the main content is visible
+            const complianceCtx = document.getElementById('complianceTrendChart').getContext('2d');
+            const complianceTrendChart = new Chart(complianceCtx, {
+                type: 'line',
+                data: {
+                    labels: ['March', 'April', 'May', 'June', 'July', 'August'],
+                    datasets: [{
+                        label: 'State-wide Compliance %',
+                        data: [65, 68, 72, 70, 78, 81],
+                        borderColor: '#0284c7',
+                        backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 50,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function dismissBanner() {
+            document.getElementById('prototype-banner').style.display = 'none';
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.querySelector('span').innerText = translations[currentLang].toastText;
+            toast.style.bottom = '20px';
+            setTimeout(() => {
+                toast.style.bottom = '-100px';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+
+
